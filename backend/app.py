@@ -17,6 +17,16 @@ app.mount("/models", StaticFiles(directory=MODELS_DIR), name="models")
 @app.get("/")
 def read_root():
     return {"message": "NexEra AI Backend Running 🚀"}
+from avatar import get_avatar_animation
+
+@app.get("/avatar-action")
+def avatar_action(command: str):
+    try:
+        result = get_avatar_animation(command)
+        return result
+    except Exception as e:
+        return {"animation": "models/avatar/T-pose.glb", "explanation": f"Error: {e}"}
+
 
 @app.get("/generate-3d")
 def generate_3d(query: str = Query(...)):
