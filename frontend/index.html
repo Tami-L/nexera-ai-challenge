@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NexEra AI 3D & Avatar Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .section {
+            margin: 20px;
+            text-align: center;
+        }
+        input, button {
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 16px;
+        }
+        #canvas {
+            width: 100%;
+            height: 500px;
+            display: block;
+            margin: auto;
+            background-color: #eeeeee;
+        }
+        #explanation {
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>NexEra AI 3D & Avatar Demo</h2>
+
+    <!-- 3D Object Section -->
+    <div class="section">
+        <h3>Generate 3D Object</h3>
+        <input id="input" placeholder="Enter object name (e.g., helmet)" />
+        <button onclick="generate3D()">Generate</button>
+        <p id="object-explanation"></p>
+        <canvas id="object-canvas"></canvas>
+    </div>
+
+    <!-- Avatar Section -->
+    <div class="section">
+        <h3>Avatar Actions</h3>
+        <button onclick="performAvatarAction('wave')">Wave</button>
+        <button onclick="performAvatarAction('walk')">Walk</button>
+        <button onclick="performAvatarAction('point')">Point</button>
+        <button onclick="performAvatarAction('view')">View</button>
+        <p id="avatar-explanation"></p>
+        <canvas id="avatar-canvas"></canvas>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="main.js"></script>
+    <script type="module" src="avatar.js"></script>
+</body>
+</html>
