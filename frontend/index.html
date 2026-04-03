@@ -1,40 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>NexEra AI 3D & Avatar Demo</title>
-    <style>
-        body { font-family: Arial; margin:0; padding:0; }
-        h2 { text-align:center; margin-top:20px; }
-        .section { margin:20px; text-align:center; }
-        input, button { padding:8px 12px; margin:5px; font-size:16px; }
-        canvas { width:100%; height:500px; display:block; margin:auto; background-color:#eeeeee; }
-        #object-explanation, #avatar-explanation { font-weight:bold; margin-top:10px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NexEra AI Training Platform</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <h2>NexEra AI 3D & Avatar Demo</h2>
 
-    <div class="section">
-        <h3>Generate 3D Object</h3>
-        <input id="input" placeholder="Enter object name (e.g., helmet)" />
-        <button onclick="generate3D()">Generate</button>
-        <p id="object-explanation"></p>
+  <!-- Header -->
+  <header>
+    <div class="logo">NexEra <span>AI</span></div>
+    <nav>
+      <a href="#test1">3D Asset Pipeline</a>
+      <a href="#test2">Avatar Coach</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>AI-Powered Training Platform</h1>
+      <p>Generate 3D learning content from text or images. Command AI avatars with natural language.</p>
+    </section>
+
+    <!-- ===================== TEST 1 ===================== -->
+    <section id="test1" class="card">
+      <div class="card-header">
+        <span class="badge">Test 1</span>
+        <h2>AI 3D Asset Pipeline</h2>
+        <p>Describe a training object or upload an image — AI generates a 3D model with an educational summary.</p>
+      </div>
+
+      <div class="input-group">
+        <input
+          id="object-input"
+          type="text"
+          placeholder="e.g. hard hat, fire extinguisher, safety gloves..."
+          autocomplete="off"
+        />
+        <button id="generate-btn" onclick="generate3D()">Generate 3D Model</button>
+      </div>
+
+      <div class="divider">— or upload an image —</div>
+
+      <div class="upload-row">
+        <label class="file-label" for="image-upload">
+          📁 Choose Image
+          <input id="image-upload" type="file" accept="image/*" />
+        </label>
+        <button onclick="generate3DFromImage()">Analyse Image</button>
+        <span id="identified-label" class="tag"></span>
+      </div>
+
+      <div id="object-spinner" class="spinner" style="display:none;"></div>
+      <p id="object-explanation" class="explanation"></p>
+
+      <div class="canvas-wrap">
         <canvas id="object-canvas"></canvas>
-    </div>
+        <div class="canvas-hint">Drag to rotate · Scroll to zoom · Right-click to pan</div>
+      </div>
+    </section>
 
-    <div class="section">
-        <h3>Avatar Actions</h3>
-        <button onclick="performAvatarAction('wave')">Wave</button>
-        <button onclick="performAvatarAction('walk')">Walk</button>
-        <button onclick="performAvatarAction('point')">Point</button>
-        <button onclick="performAvatarAction('view')">View</button>
-        <p id="avatar-explanation"></p>
+    <!-- ===================== TEST 2 ===================== -->
+    <section id="test2" class="card">
+      <div class="card-header">
+        <span class="badge badge-green">Test 2</span>
+        <h2>Avatar AI Coach</h2>
+        <p>Type any natural language command — Claude interprets it and drives the avatar's animation.</p>
+      </div>
+
+      <div class="input-group">
+        <input
+          id="avatar-input"
+          type="text"
+          placeholder="e.g. Wave hello to the learner, Show safety posture, Walk to the table..."
+          autocomplete="off"
+        />
+        <button id="avatar-send-btn">Send Command</button>
+      </div>
+
+      <div class="quick-actions">
+        <span class="label">Quick actions:</span>
+        <button class="quick-btn" data-anim="wave" onclick="quickAction('wave')">👋 Wave</button>
+        <button class="quick-btn" data-anim="walk" onclick="quickAction('walk')">🚶 Walk</button>
+        <button class="quick-btn" data-anim="point" onclick="quickAction('point')">👉 Point</button>
+        <button class="quick-btn" data-anim="view" onclick="quickAction('view')">👀 View</button>
+        <button class="quick-btn" data-anim="T-pose" onclick="quickAction('T-pose')">🧍 Reset</button>
+      </div>
+
+      <p id="avatar-explanation" class="explanation"></p>
+
+      <div class="canvas-wrap">
         <canvas id="avatar-canvas"></canvas>
-    </div>
+        <div class="canvas-hint">Drag to rotate · Scroll to zoom · Right-click to pan</div>
+      </div>
+    </section>
 
-    <!-- Scripts -->
-    <script type="module" src="main.js"></script>
-    <script type="module" src="avatar.js"></script>
+  </main>
+
+  <footer>
+    <p>NexEra AI Training Platform · Built for the AI Engineering Challenge</p>
+  </footer>
+
+  <script type="module" src="main.js"></script>
+  <script type="module" src="avatar.js"></script>
 </body>
 </html>
