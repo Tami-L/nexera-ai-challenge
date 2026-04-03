@@ -1,14 +1,19 @@
 # backend/app.py
-from fastapi import FastAPI
+import os
+import base64
+from fastapi import FastAPI, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import os
-import random
+from dotenv import load_dotenv
 
-app = FastAPI(title="NexEra Avatar API")
+from ai import parse_avatar_command, generate_educational_summary, identify_object_from_image
+from retrieval import get_model_url
 
-# Allow frontend to access backend from different port
+load_dotenv()
+
+app = FastAPI(title="NexEra AI API")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,60 +21,90 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve the models directory so frontend can access .glb files
+# Serve all GLB models statically
 models_dir = os.path.join(os.path.dirname(__file__), "models")
 app.mount("/models", StaticFiles(directory=models_dir), name="models")
 
-# -------------------
-# Avatar Commands
-# -------------------
-COMMAND_MAP = {
-    "wave": "models/avatar/wave.glb",
-    "walk": "models/avatar/walk.glb",
-    "point": "models/avatar/point.glb",
-    "view": "models/avatar/view.glb",
-    "default": "models/avatar/T-pose.glb"
-}
 
-def get_avatar_animation(command: str):
-    cmd = command.lower()
-    animation_file = COMMAND_MAP.get(cmd, COMMAND_MAP["default"])
-    explanation = f"This action represents '{cmd}' in a training scenario."
-    return JSONResponse({"animation": animation_file, "explanation": explanation})
+# -------------------------------------------------------
+# TEST 2 — Avatar: Natural Language → Animation
+# -------------------------------------------------------
 
 @app.get("/avatar-action")
-def avatar_action(command: str):
-    return get_avatar_animation(command)
+async def avatar_action(command: str):
+    """
+    Accepts a natural language command.
+    GPT interprets it and maps it to an animation + explanation.
+    """
+    result = parse_avatar_command(command)
+    animation_name = result["animation"]
+    explanation = result["explanation"]
+    animation_url = f"models/avatar/{animation_name}.glb"
 
-# -------------------
-# Simulated AI 3D Generation
-# -------------------
-# Map some example object prompts to GLB models
-SIMULATED_3D_MODELS = {
-    "helmet": "models/3d/helmet.glb",
-    "hammer": "models/3d/hammer.glb",
-    "screwdriver": "models/3d/screwdriver.glb",
-    "wrench": "models/3d/wrench.glb",
-}
+    return JSONResponse({
+        "animation": animation_url,
+        "animation_name": animation_name,
+        "explanation": explanation,
+        "command_received": command
+    })
 
-def get_3d_model(prompt: str):
-    prompt_lower = prompt.lower()
-    # If exact match exists, return it
-    if prompt_lower in SIMULATED_3D_MODELS:
-        model_file = SIMULATED_3D_MODELS[prompt_lower]
-    else:
-        # Pick a random existing 3D model for unknown prompts
-        model_file = random.choice(list(SIMULATED_3D_MODELS.values()))
-    explanation = f"This 3D object represents '{prompt}' for training purposes."
-    return JSONResponse({"model": model_file, "explanation": explanation})
+
+# -------------------------------------------------------
+# TEST 1 — 3D Asset Pipeline: Text → 3D Model
+# -------------------------------------------------------
 
 @app.get("/generate-3d")
-def generate_3d(query: str):
-    return get_3d_model(query)
+async def generate_3d(query: str):
+    """
+    Accepts a text description. Returns a matching GLB model URL
+    and a GPT-generated educational summary.
+    """
+    model_url = get_model_url(query)
+    summary = generate_educational_summary(query)
 
-# -------------------
-# Root Endpoint
-# -------------------
+    return JSONResponse({
+        "model": model_url,
+        "explanation": summary,
+        "query": query
+    })
+
+
+# -------------------------------------------------------
+# TEST 1 — 3D Asset Pipeline: Image Upload → 3D Model
+# -------------------------------------------------------
+
+@app.post("/generate-3d-from-image")
+async def generate_3d_from_image(file: UploadFile = File(...)):
+    """
+    Accepts an uploaded image. Uses GPT-4o Vision to identify the object,
+    then returns the closest matching GLB model + educational summary.
+    """
+    image_bytes = await file.read()
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+    content_type = file.content_type or "image/jpeg"
+
+    identified_object = identify_object_from_image(image_base64, content_type)
+    model_url = get_model_url(identified_object)
+    summary = generate_educational_summary(identified_object)
+
+    return JSONResponse({
+        "model": model_url,
+        "explanation": summary,
+        "identified_as": identified_object
+    })
+
+
+# -------------------------------------------------------
+# Root
+# -------------------------------------------------------
+
 @app.get("/")
 def root():
-    return {"message": "Welcome to NexEra Avatar API!"}
+    return {
+        "message": "NexEra AI API is running",
+        "endpoints": [
+            "GET  /avatar-action?command=<natural language>",
+            "GET  /generate-3d?query=<object description>",
+            "POST /generate-3d-from-image  (multipart image upload)"
+        ]
+    }
