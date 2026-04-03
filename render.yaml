@@ -4,9 +4,9 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: python -m uvicorn app:app --host 0.0.0.0 --port 8000
+    startCommand: /opt/render/project/src/.venv/bin/pip install -r requirements.txt && /opt/render/project/src/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
     envVars:
       - key: OPENAI_API_KEY
         sync: false
       - key: POETRY_VIRTUALENVS_CREATE
-        value: false
+        value: "false"
