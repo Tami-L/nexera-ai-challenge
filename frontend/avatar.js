@@ -1,57 +1,90 @@
-// avatar.js — Test 2: Natural Language → Avatar Animation
+// avatar.js — Test 2: Natural Language → Avatar Animation (Mixamo FBX)
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/loaders/GLTFLoader.js";
+import { FBXLoader } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/loaders/FBXLoader.js";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/controls/OrbitControls.js";
 
 const API_BASE = "http://127.0.0.1:8000";
 
-let scene, camera, renderer, controls, mixer, clock, currentAvatar;
+let scene, camera, renderer, controls, clock;
+let mixer = null;
+let currentAction = null;
+let avatar = null; // the loaded X Bot character
+
+const fbxLoader = new FBXLoader();
+
+// Map animation names to their FBX filenames
+const ANIMATION_FILES = {
+    "T-pose":  "T-pose.fbx",
+    "idle":    "idle.fbx",
+    "walk":    "walk.fbx",
+    "wave":    "wave.fbx",
+    "point":   "point.fbx",
+    "view":    "view.fbx",
+};
 
 initAvatar();
 
 function initAvatar() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f3460);
+    scene.fog = new THREE.Fog(0x0f3460, 10, 50);
 
-    camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    camera.position.set(0, 1.6, 3.5);
+    camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.set(0, 120, 280);
 
     const canvas = document.getElementById("avatar-canvas");
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     resizeAvatarRenderer();
 
     // Lighting
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x223355, 1.5);
-    hemi.position.set(0, 20, 0);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x223355, 1.8);
+    hemi.position.set(0, 200, 0);
     scene.add(hemi);
 
-    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-    dir.position.set(5, 10, 5);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+    dir.position.set(80, 200, 100);
+    dir.castShadow = true;
+    dir.shadow.camera.top = 200;
+    dir.shadow.camera.bottom = -100;
+    dir.shadow.camera.left = -120;
+    dir.shadow.camera.right = 120;
     scene.add(dir);
 
     // Floor
-    const floorGeo = new THREE.PlaneGeometry(10, 10);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x16213e });
+    const floorGeo = new THREE.PlaneGeometry(600, 600);
+    const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x16213e,
+        roughness: 0.8,
+    });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
     scene.add(floor);
 
-    const grid = new THREE.GridHelper(10, 20, 0x1a4a7a, 0x163660);
+    const grid = new THREE.GridHelper(600, 40, 0x1a4a7a, 0x163660);
     scene.add(grid);
 
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1, 0);
+    controls.target.set(0, 80, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
+    controls.minDistance = 100;
+    controls.maxDistance = 500;
     controls.update();
 
     clock = new THREE.Clock();
 
     window.addEventListener("resize", resizeAvatarRenderer);
-    animateAvatar();
 
-    // Load default T-pose on start
-    loadAvatarModel("models/avatar/T-pose.glb");
+    // Load the base X Bot character first, then play idle
+    loadCharacter(() => {
+        playAnimation("idle");
+    });
+
+    animateAvatar();
+    setupUI();
 }
 
 function resizeAvatarRenderer() {
@@ -71,74 +104,78 @@ function animateAvatar() {
     renderer.render(scene, camera);
 }
 
-function loadAvatarModel(url) {
-    const loader = new GLTFLoader();
-    const fullUrl = `${API_BASE}/${url}`;
+function loadCharacter(onLoaded) {
+    showAvatarExplanation("Loading avatar character...");
 
-    // Cleanup old avatar
-    if (currentAvatar) {
-        scene.remove(currentAvatar);
-        currentAvatar.traverse((child) => {
-            if (child.isMesh) {
-                child.geometry.dispose();
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(m => m.dispose());
-                } else {
-                    child.material.dispose();
+    fbxLoader.load(
+        `${API_BASE}/models/avatar/base.fbx`,
+        (fbx) => {
+            avatar = fbx;
+            avatar.scale.setScalar(1);
+
+            avatar.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
                 }
-            }
-        });
-        currentAvatar = null;
-    }
-    if (mixer) {
-        mixer.stopAllAction();
-        mixer = null;
-    }
+            });
 
-    loader.load(
-        fullUrl,
-        (gltf) => {
-            currentAvatar = gltf.scene;
+            scene.add(avatar);
+            mixer = new THREE.AnimationMixer(avatar);
 
-            // Auto-scale avatar
-            const box = new THREE.Box3().setFromObject(currentAvatar);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            const scale = 1.8 / size.y;
-            currentAvatar.scale.setScalar(scale);
-
-            // Centre on floor
-            const center = new THREE.Vector3();
-            box.getCenter(center);
-            currentAvatar.position.x = -center.x * scale;
-            currentAvatar.position.z = -center.z * scale;
-            currentAvatar.position.y = 0;
-
-            scene.add(currentAvatar);
-
-            // Play animation if present
-            if (gltf.animations && gltf.animations.length > 0) {
-                mixer = new THREE.AnimationMixer(currentAvatar);
-                const action = mixer.clipAction(gltf.animations[0]);
-                action.reset();
-                action.play();
-            }
-
-            // Highlight active button
-            highlightActiveAnimation(url);
+            showAvatarExplanation("Avatar ready. Type a command or use the quick buttons below.");
+            if (onLoaded) onLoaded();
         },
-        undefined,
+        (xhr) => {
+            const pct = Math.round((xhr.loaded / xhr.total) * 100);
+            showAvatarExplanation(`Loading avatar... ${pct}%`);
+        },
         (err) => {
-            console.error("Avatar model load error:", err);
-            showAvatarError("Could not load avatar model.");
+            console.error("Failed to load base character:", err);
+            showAvatarError("Could not load avatar. Make sure backend is running and base.fbx exists.");
         }
     );
 }
 
-function highlightActiveAnimation(url) {
+function playAnimation(animName) {
+    if (!avatar || !mixer) return;
+
+    const filename = ANIMATION_FILES[animName] || ANIMATION_FILES["idle"];
+
+    fbxLoader.load(
+        `${API_BASE}/models/avatar/${filename}`,
+        (fbx) => {
+            if (!fbx.animations || fbx.animations.length === 0) {
+                console.warn("No animations found in", filename);
+                return;
+            }
+
+            const newAction = mixer.clipAction(fbx.animations[0]);
+
+            // Smooth crossfade from current action
+            if (currentAction && currentAction !== newAction) {
+                currentAction.fadeOut(0.3);
+            }
+
+            newAction.reset();
+            newAction.fadeIn(0.3);
+            newAction.play();
+            currentAction = newAction;
+
+            highlightActiveButton(animName);
+        },
+        undefined,
+        (err) => {
+            console.error("Failed to load animation:", filename, err);
+            showAvatarError(`Could not load animation: ${animName}`);
+        }
+    );
+}
+
+function highlightActiveButton(animName) {
     document.querySelectorAll(".quick-btn").forEach(btn => {
         btn.classList.remove("active");
-        if (url.includes(btn.dataset.anim)) {
+        if (btn.dataset.anim === animName) {
             btn.classList.add("active");
         }
     });
@@ -154,18 +191,22 @@ function setAvatarLoading(isLoading) {
 
 function showAvatarExplanation(text) {
     const el = document.getElementById("avatar-explanation");
-    el.textContent = text;
-    el.style.color = "#a8dadc";
+    if (el) {
+        el.textContent = text;
+        el.style.color = "#a8dadc";
+    }
 }
 
 function showAvatarError(text) {
     const el = document.getElementById("avatar-explanation");
-    el.textContent = text;
-    el.style.color = "#ff6b6b";
+    if (el) {
+        el.textContent = text;
+        el.style.color = "#ff6b6b";
+    }
 }
 
-// --- Natural language command ---
-window.performAvatarAction = async function (command) {
+// --- Natural language command via backend ---
+window.performAvatarAction = async function(command) {
     if (!command || !command.trim()) return;
 
     setAvatarLoading(true);
@@ -177,7 +218,7 @@ window.performAvatarAction = async function (command) {
         const data = await res.json();
 
         showAvatarExplanation(`"${data.animation_name}" — ${data.explanation}`);
-        loadAvatarModel(data.animation);
+        playAnimation(data.animation_name);
     } catch (e) {
         console.error(e);
         showAvatarError("Backend unreachable. Make sure FastAPI is running on port 8000.");
@@ -187,13 +228,13 @@ window.performAvatarAction = async function (command) {
 };
 
 // --- Quick action buttons ---
-window.quickAction = function (animName) {
-    loadAvatarModel(`models/avatar/${animName}.glb`);
+window.quickAction = function(animName) {
+    playAnimation(animName);
     showAvatarExplanation(`Playing animation: ${animName}`);
 };
 
-// Allow Enter key on avatar input
-document.addEventListener("DOMContentLoaded", () => {
+function setupUI() {
+    // Enter key on input
     const input = document.getElementById("avatar-input");
     if (input) {
         input.addEventListener("keydown", (e) => {
@@ -203,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Send button
     const sendBtn = document.getElementById("avatar-send-btn");
     if (sendBtn) {
         sendBtn.addEventListener("click", () => {
@@ -210,4 +252,4 @@ document.addEventListener("DOMContentLoaded", () => {
             window.performAvatarAction(input.value.trim());
         });
     }
-});
+}

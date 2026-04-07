@@ -8,12 +8,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def parse_avatar_command(user_input: str) -> dict:
-    """
-    Use GPT to interpret a natural language command and map it
-    to one of the available avatar animations.
-    Returns: { "animation": str, "explanation": str }
-    """
-    available_animations = ["wave", "walk", "point", "view", "T-pose"]
+    available_animations = ["idle", "wave", "walk", "point", "view", "T-pose"]
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -43,7 +38,7 @@ EXPLANATION: <one sentence explanation>"""
     raw = response.choices[0].message.content.strip()
     lines = raw.splitlines()
 
-    animation = "T-pose"
+    animation = "idle"
     explanation = "The avatar is standing by in a neutral position."
 
     for line in lines:
@@ -58,10 +53,6 @@ EXPLANATION: <one sentence explanation>"""
 
 
 def generate_educational_summary(prompt: str) -> str:
-    """
-    Use GPT to generate a short educational summary about an object or tool.
-    Used in the 3D asset pipeline (Test 1).
-    """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         max_tokens=200,
@@ -87,10 +78,6 @@ No bullet points, just plain sentences."""
 
 
 def identify_object_from_image(image_base64: str, content_type: str) -> str:
-    """
-    Use GPT-4o Vision to identify the main object in an uploaded image.
-    Returns a clean keyword for model lookup.
-    """
     response = client.chat.completions.create(
         model="gpt-4o",
         max_tokens=100,

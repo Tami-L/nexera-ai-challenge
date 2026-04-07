@@ -68,7 +68,7 @@
       <div class="card-header">
         <span class="badge badge-green">Test 2</span>
         <h2>Avatar AI Coach</h2>
-        <p>Type any natural language command — Claude interprets it and drives the avatar's animation.</p>
+        <p>Type any natural language command — GPT interprets it and drives the avatar's animation.</p>
       </div>
 
       <div class="input-group">
@@ -83,11 +83,12 @@
 
       <div class="quick-actions">
         <span class="label">Quick actions:</span>
-        <button class="quick-btn" data-anim="wave" onclick="quickAction('wave')">👋 Wave</button>
-        <button class="quick-btn" data-anim="walk" onclick="quickAction('walk')">🚶 Walk</button>
-        <button class="quick-btn" data-anim="point" onclick="quickAction('point')">👉 Point</button>
-        <button class="quick-btn" data-anim="view" onclick="quickAction('view')">👀 View</button>
-        <button class="quick-btn" data-anim="T-pose" onclick="quickAction('T-pose')">🧍 Reset</button>
+        <button class="quick-btn" data-anim="idle"   onclick="quickAction('idle')">🧍 Idle</button>
+        <button class="quick-btn" data-anim="wave"   onclick="quickAction('wave')">👋 Wave</button>
+        <button class="quick-btn" data-anim="walk"   onclick="quickAction('walk')">🚶 Walk</button>
+        <button class="quick-btn" data-anim="point"  onclick="quickAction('point')">👉 Point</button>
+        <button class="quick-btn" data-anim="view"   onclick="quickAction('view')">👀 Look Around</button>
+        <button class="quick-btn" data-anim="T-pose" onclick="quickAction('T-pose')">✚ T-Pose</button>
       </div>
 
       <p id="avatar-explanation" class="explanation"></p>
