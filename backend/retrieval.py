@@ -1,43 +1,42 @@
 # retrieval.py
-MODEL_KEYWORD_MAP = {
-    "hard hat": "hard_hat.glb",
-    "hardhat": "hard_hat.glb",
-    "helmet": "hard_hat.glb",
-    "safety helmet": "hard_hat.glb",
-    "construction helmet": "hard_hat.glb",
-    "hard_hat": "hard_hat.glb",
-    "fire extinguisher": "fire_extinguisher.glb",
-    "extinguisher": "fire_extinguisher.glb",
+
+MODEL_MAP = {
     "fire_extinguisher": "fire_extinguisher.glb",
-    "fire safety": "fire_extinguisher.glb",
+    "hard_hat": "hard_hat.glb",
+    "default": "default.glb"
 }
 
-MODELS_BASE_PATH = "models"
-
-AVATAR_ANIMATIONS = {
-    "idle":   "idle.fbx",
-    "wave":   "wave.fbx",
-    "walk":   "walk.fbx",
-    "point":  "point.fbx",
-    "view":   "view.fbx",
-    "T-pose": "T-pose.fbx",
-    "default": "idle.fbx",
+SYNONYMS = {
+    "fire_extinguisher": [
+        "extinguisher",
+        "fire safety",
+        "fire device",
+        "fire suppression"
+    ],
+    "hard_hat": [
+        "helmet",
+        "safety helmet",
+        "construction helmet",
+        "head protection"
+    ]
 }
 
 
-def get_model_filename(prompt: str) -> str:
-    prompt_lower = prompt.lower().strip()
-    for keyword, filename in MODEL_KEYWORD_MAP.items():
-        if keyword in prompt_lower:
-            return filename
-    return "fire_extinguisher.glb"
+def resolve_object(user_input: str):
+    if not user_input:
+        return "default", True
 
+    text = user_input.lower()
 
-def get_model_url(prompt: str) -> str:
-    filename = get_model_filename(prompt)
-    return f"{MODELS_BASE_PATH}/{filename}"
+    # Exact match
+    for key in MODEL_MAP:
+        if key in text:
+            return key, False
 
+    # Synonym match
+    for key, words in SYNONYMS.items():
+        for word in words:
+            if word in text:
+                return key, False
 
-def get_avatar_animation_url(animation_name: str) -> str:
-    filename = AVATAR_ANIMATIONS.get(animation_name, "idle.fbx")
-    return f"{MODELS_BASE_PATH}/avatar/{filename}"
+    return "default", True
