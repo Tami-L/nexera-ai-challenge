@@ -4,6 +4,7 @@ import os
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi import Request
 
 from ai import (
     detect_object_from_text,
@@ -65,19 +66,20 @@ def health():
 
 
 @app.get("/generate-3d")
-def generate_3d(query: str):
-    detected_object, confidence = detect_object_from_text(query)
+async def generate_3d(query: str, request: Request):
+    # Example logic
+    model_path = "/models/chair.glb"
+    fallback = False
 
-    obj, fallback_flag = resolve_object(detected_object)
+    base_url = str(request.base_url).rstrip("/")
 
-    if obj not in MODEL_MAP:
-        obj = "default"
-        fallback_flag = True
-
-    summary = f"This is a {obj.replace('_', ' ')}."
-
-    return build_response(obj, summary, confidence, fallback_flag)
-
+    return {
+        "success": True,
+        "model_url": f"{base_url}{model_path}",
+        "fallback": fallback,
+        "object": query,
+        "message": None
+    }
 
 @app.post("/generate-3d-from-image")
 async def generate_3d_from_image(file: UploadFile = File(...)):

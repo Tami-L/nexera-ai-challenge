@@ -53,20 +53,27 @@ async function loadModel(path) {
 }
 
 // ----------- Backend Fetch Function -----------
+const API_BASE = "https://nexera-ai-challenge.onrender.com";
+
 async function fetchModel(query) {
     try {
-        const response = await fetch(
-            `https://YOUR-RENDER-BACKEND.onrender.com/generate-3d?query=${encodeURIComponent(query)}`
+        const res = await fetch(
+            `${API_BASE}/generate-3d?query=${encodeURIComponent(query)}`
         );
-        const data = await response.json();
-        if (data.fallback) {
-            console.warn('Fallback model returned:', data.object);
+
+        if (!res.ok) throw new Error("API failed");
+
+        const data = await res.json();
+
+        if (!data.success) {
+            throw new Error(data.message || "Unknown error");
         }
-        const modelPath = data.model_path;
-        await loadModel(modelPath);
+
+        await loadModel(data.model_url);
+
     } catch (err) {
-        console.error('Failed to fetch model:', err);
-        await loadModel('/models/default.glb'); // fallback
+        console.error(err);
+        await loadModel('/models/default.glb');
     }
 }
 
